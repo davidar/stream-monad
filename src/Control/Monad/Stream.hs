@@ -24,33 +24,75 @@
 -- are interpreted as a multiset, i.e., a valid transformation
 -- according to the monad laws may change the order of the results.
 -- 
-module Control.Monad.Stream ( Stream, suspended, runStream, toList ) where
+{-# LANGUAGE CPP, FlexibleInstances, LambdaCase,
+  MultiParamTypeClasses, TypeSynonymInstances, UndecidableInstances
+  #-}
 
-import Control.Monad
-import Control.Applicative
-import Control.Monad.Logic
-import Data.Foldable
-import Data.Traversable
-import Prelude hiding (foldr)
+module Control.Monad.Stream
+  ( Stream
+  , suspended
+  , runStream
+  , toList
+  ) where
+
+import Control.Applicative (Alternative(..), (<**>))
+import Control.Monad (MonadPlus(..), liftM)
+import qualified Control.Monad.Fail as Fail
+import Control.Monad.Identity (Identity(..))
+import Control.Monad.Logic.Class (MonadLogic(..))
+import Control.Monad.Reader.Class (MonadReader(..))
+import Control.Monad.State.Class (MonadState(..))
+import Control.Monad.Trans (MonadIO(..), MonadTrans(..))
+import qualified Data.Foldable as F
+import Data.Foldable (toList)
+#if !MIN_VERSION_base(4,8,0)
+import Data.Monoid (Monoid(..))
+#endif
+#if MIN_VERSION_base(4,9,0)
+import Data.Semigroup (Semigroup(..))
+#endif
+import Data.Traversable (foldMapDefault)
 
 -- |
 -- Results of non-deterministic computations of type @Stream a@ can be
 -- enumerated efficiently.
 -- 
-data Stream a = Nil | Single a | Cons a (Stream a) | Susp (Stream a)
+data StreamF s a
+  = Nil
+  | Single a
+  | Cons a s
+  | Susp s
 
-instance Functor Stream
- where
-  fmap _ Nil         = Nil
-  fmap f (Single x)  = Single (f x)
-  fmap f (Cons x xs) = Cons (f x) (fmap f xs)
-  fmap f (Susp xs)   = Susp (fmap f xs)
+newtype StreamT m a =
+  StreamT
+    { unStreamT :: m (StreamF (StreamT m a) a)
+    }
+
+type Stream = StreamT Identity
+
+instance Monad m => Functor (StreamT m) where
+  fmap f m =
+    m `bind` \case
+      Nil -> empty
+      Single x -> return (f x)
+      Cons x xs -> cons (f x) (fmap f xs)
+      Susp xs -> suspended (fmap f xs)
 
 -- |
 -- Suspensions can be used to ensure fairness.
 -- 
-suspended :: Stream a -> Stream a
-suspended = Susp
+suspended :: Monad m => StreamT m a -> StreamT m a
+suspended = StreamT . return . Susp
+
+cons :: Monad m => a -> StreamT m a -> StreamT m a
+cons a = StreamT . return . Cons a
+
+bind ::
+     Monad m
+  => StreamT m a
+  -> (StreamF (StreamT m a) a -> StreamT m b)
+  -> StreamT m b
+bind m f = StreamT $ unStreamT m >>= unStreamT . f
 
 -- |
 -- The function @runStream@ enumerates the results of a
@@ -58,55 +100,92 @@ suspended = Susp
 -- 
 runStream :: Stream a -> [a]
 runStream = toList
-{-# DEPRECATED runStream "use toList" #-}
 
-instance Monad Stream
- where
-  return = Single
+{-# DEPRECATED
+runStream "use toList"
+ #-}
 
-  Nil       >>= _ = Nil
-  Single x  >>= f = f x
-  Cons x xs >>= f = f x `mplus` suspended (xs >>= f)
-  Susp xs   >>= f = suspended (xs >>= f)
+instance Monad m => Monad (StreamT m) where
+  return = pure
+  m >>= f =
+    m `bind` \case
+      Nil -> empty
+      Single x -> f x
+      Cons x xs -> f x <|> suspended (xs >>= f)
+      Susp xs -> suspended (xs >>= f)
+#if !MIN_VERSION_base(4,13,0)
+  fail = Fail.fail
+#endif
+instance Monad m => Fail.MonadFail (StreamT m) where
+  fail _ = empty
 
-instance MonadPlus Stream
- where
-  mzero = Nil
+instance Monad m => Alternative (StreamT m) where
+  empty = StreamT $ return Nil
+  m <|> ys =
+    m `bind` \case
+      Nil -> suspended ys -- suspending
+      Single x -> cons x ys
+      Cons x xs -> cons x (ys <|> xs) -- interleaving
+      Susp xs ->
+        ys `bind` \case
+          Nil -> suspended xs
+          Single y -> cons y xs
+          Cons y ys' -> cons y (xs <|> ys')
+          Susp ys' -> suspended (xs <|> ys')
 
-  Nil       `mplus` ys        = suspended ys                -- suspending
-  Single x  `mplus` ys        = Cons x ys
-  Cons x xs `mplus` ys        = Cons x (ys `mplus` xs)      -- interleaving
-  xs        `mplus` Nil       = xs
-  Susp xs   `mplus` Single y  = Cons y xs
-  Susp xs   `mplus` Cons y ys = Cons y (xs `mplus` ys)
-  Susp xs   `mplus` Susp ys   = suspended (xs `mplus` ys)
+instance Monad m => MonadPlus (StreamT m) where
+  mzero = empty
+  mplus = (<|>)
+#if MIN_VERSION_base(4,9,0)
+instance Monad m => Semigroup (StreamT m a) where
+  (<>) = mplus
+  sconcat = foldr1 mplus
+#endif
+instance Monad m => Monoid (StreamT m a) where
+  mempty = empty
+  mappend = (<|>)
+  mconcat = F.asum
 
-instance Applicative Stream where
-  pure  = Single
+instance Monad m => Applicative (StreamT m) where
+  pure = StreamT . return . Single
+  m <*> xs =
+    m `bind` \case
+      Nil -> empty
+      Single f -> fmap f xs
+      Cons f fs -> fmap f xs <|> (xs <**> fs)
+      Susp fs -> suspended (xs <**> fs)
 
-  Nil       <*> _  = Nil
-  Single f  <*> xs = fmap f xs
-  Cons f fs <*> xs = fmap f xs <|> (xs <**> fs)
-  Susp fs   <*> xs = suspended (xs <**> fs)
+instance Monad m => MonadLogic (StreamT m) where
+  (>>-) = (>>=)
+  interleave = mplus
+  msplit m =
+    m `bind` \case
+      Nil -> return Nothing
+      Single x -> return $ Just (x, empty)
+      Cons x xs -> return $ Just (x, suspended xs)
+      Susp xs -> suspended $ msplit xs
 
-instance Alternative Stream where
-  empty = Nil
-  (<|>) = mplus
+instance MonadTrans StreamT where
+  lift = StreamT . liftM Single
 
-instance MonadLogic Stream where
-   (>>-)      = (>>=)
-   interleave = mplus
+instance MonadIO m => MonadIO (StreamT m) where
+  liftIO = lift . liftIO
 
-   msplit Nil         = return Nothing
-   msplit (Single x)  = return $ Just (x, Nil)
-   msplit (Cons x xs) = return $ Just (x, suspended xs)
-   msplit (Susp xs)   = suspended $ msplit xs
+instance MonadReader r m => MonadReader r (StreamT m) where
+  ask = lift ask
+  local f = StreamT . local f . unStreamT
+
+instance MonadState s m => MonadState s (StreamT m) where
+  get = lift get
+  put = lift . put
 
 instance Foldable Stream where
   foldMap = foldMapDefault
 
 instance Traversable Stream where
-  traverse _ Nil         = pure Nil
-  traverse f (Single x)  = Single <$> f x
-  traverse f (Cons x xs) = Cons <$> f x <*> traverse f xs
-  traverse f (Susp xs)   = Susp <$> traverse f xs
+  traverse f s =
+    case runIdentity (unStreamT s) of
+      Nil -> pure empty
+      Single x -> return <$> f x
+      Cons x xs -> cons <$> f x <*> traverse f xs
+      Susp xs -> suspended <$> traverse f xs

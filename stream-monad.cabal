@@ -22,7 +22,8 @@ Extra-Source-Files: README
 
 Library
   Build-Depends:    base >= 3 && < 5,
-                    logict >= 0.4
+                    logict >= 0.4,
+                    mtl
   HS-Source-Dirs:   src
   Exposed-Modules:  Control.Monad.Stream
   Ghc-Options:      -Wall
