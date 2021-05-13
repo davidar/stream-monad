@@ -1,55 +1,76 @@
-Name:          streamt
-Version:       0.4.0.2
-Cabal-Version: >= 1.8
-Synopsis:      Simple, Fair and Terminating Backtracking Monad
-Description:   This Haskell library provides an implementation of the
-               MonadPlus type class that enumerates results of a
-               non-deterministic computation by interleaving
-               subcomputations in a way that has usually much better
-               memory performance than other strategies with the same
-               termination properties.
-Category:      Control, Monads
-License:       BSD3
-License-File:  LICENSE
-Author:        Oleg Kiselyov, Sebastian Fischer
-Maintainer:    Sebastian Fischer (fischer@nii.ac.jp)
-Bug-Reports:   http://github.com/davidar/streamt/issues
-Homepage:      http://github.com/davidar/streamt
-Build-Type:    Simple
-Stability:     experimental
-Tested-with:   GHC==9.0.1, GHC==8.10.4, GHC==8.8.4, GHC==8.6.5, GHC==8.4.4, GHC==8.2.2, GHC==8.0.2, GHC==7.10.3, GHC==7.8.4, GHC==7.6.3, GHC==7.4.2, GHC==7.2.2, GHC==7.0.4
+name:               streamt
+version:            0.4.0.2
+cabal-version:      >=1.8
+synopsis:           Simple, Fair and Terminating Backtracking Monad
+description:
+  This Haskell library provides an implementation of the
+  MonadPlus type class that enumerates results of a
+  non-deterministic computation by interleaving
+  subcomputations in a way that has usually much better
+  memory performance than other strategies with the same
+  termination properties.
 
-Extra-Source-Files: README
+category:           Control, Monads
+license:            BSD3
+license-file:       LICENSE
+author:             Oleg Kiselyov, Sebastian Fischer
+maintainer:         Sebastian Fischer (fischer@nii.ac.jp)
+bug-reports:        http://github.com/davidar/streamt/issues
+homepage:           http://github.com/davidar/streamt
+build-type:         Simple
+stability:          experimental
+tested-with:
+  GHC ==7.0.4
+   || ==7.2.2
+   || ==7.4.2
+   || ==7.6.3
+   || ==7.8.4
+   || ==7.10.3
+   || ==8.0.2
+   || ==8.2.2
+   || ==8.4.4
+   || ==8.6.5
+   || ==8.8.4
+   || ==8.10.4
+   || ==9.0.1
 
-Library
-  Build-Depends:    base >= 3 && < 5,
-                    logict >= 0.4,
-                    mtl
-  HS-Source-Dirs:   src
-  Exposed-Modules:  Control.Monad.Stream
-  Ghc-Options:      -Wall
+extra-source-files: README
 
-Test-suite streamt-benchmarks
-  Main-Is:          benchmarks.hs
-  Build-Depends:    base >= 3 && < 5,
-                    criterion >= 0.5,
-                    logict >= 0.4,
-                    streamt
-  HS-Source-Dirs:   test
-  Type:             exitcode-stdio-1.0
+library
+  build-depends:
+      base    >=3   && <5
+    , logict  >=0.4
+    , mtl
 
-Test-suite streamt-test
-  Main-Is:          test.hs
-  Build-Depends:    base >= 3 && < 5,
-                    async >= 2.0,
-                    logict >= 0.4,
-                    mtl,
-                    streamt,
-                    tasty,
-                    tasty-hunit
-  HS-Source-Dirs:   test
-  Type:             exitcode-stdio-1.0
+  hs-source-dirs:  src
+  exposed-modules: Control.Monad.Stream
+  ghc-options:     -Wall
 
-Source-Repository head
+test-suite streamt-benchmarks
+  main-is:        benchmarks.hs
+  build-depends:
+      base       >=3   && <5
+    , criterion  >=0.5
+    , logict     >=0.4
+    , streamt
+
+  hs-source-dirs: test
+  type:           exitcode-stdio-1.0
+
+test-suite streamt-test
+  main-is:        test.hs
+  build-depends:
+      async        >=2.0
+    , base         >=3   && <5
+    , logict       >=0.4
+    , mtl
+    , streamt
+    , tasty
+    , tasty-hunit
+
+  hs-source-dirs: test
+  type:           exitcode-stdio-1.0
+
+source-repository head
   type:     git
   location: git://github.com/davidar/streamt.git
