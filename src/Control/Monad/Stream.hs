@@ -29,10 +29,17 @@
   #-}
 
 module Control.Monad.Stream
-  ( Stream
+  ( StreamT
+  , Stream
   , suspended
   , runStream
   , toList
+  , observe
+  , observeT
+  , observeAll
+  , observeAllT
+  , observeMany
+  , observeManyT
   ) where
 
 import Control.Applicative (Alternative(..), (<**>))
@@ -189,3 +196,50 @@ instance Traversable Stream where
       Single x -> return <$> f x
       Cons x xs -> cons <$> f x <*> traverse f xs
       Susp xs -> suspended <$> traverse f xs
+
+observeAllT :: Monad m => StreamT m a -> m [a]
+observeAllT m =
+  unStreamT m >>= \case
+    Nil -> return []
+    Single a -> return [a]
+    Cons a r -> do
+      t <- observeAllT r
+      return (a : t)
+    Susp r -> observeAllT r
+
+observeAll :: Stream a -> [a]
+observeAll = runIdentity . observeAllT
+
+observeManyT :: Monad m => Int -> StreamT m a -> m [a]
+observeManyT 0 _ = return []
+observeManyT n m =
+  unStreamT m >>= \case
+    Nil -> return []
+    Single a -> return [a]
+    Cons a r -> do
+      t <- observeManyT (n - 1) r
+      return (a : t)
+    Susp r -> observeManyT n r
+
+observeMany :: Int -> Stream a -> [a]
+observeMany n = runIdentity . observeManyT n
+
+#if !MIN_VERSION_base(4,13,0)
+observeT :: Monad m => StreamT m a -> m a
+#else
+observeT :: MonadFail m => StreamT m a -> m a
+#endif
+observeT m =
+  unStreamT m >>= \case
+    Nil -> fail "No answer."
+    Single a -> return a
+    Cons a _ -> return a
+    Susp r -> observeT r
+
+observe :: Stream a -> a
+observe m =
+  case runIdentity (unStreamT m) of
+    Nil -> error "No answer."
+    Single a -> a
+    Cons a _ -> a
+    Susp r -> observe r
