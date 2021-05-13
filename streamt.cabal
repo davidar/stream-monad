@@ -51,6 +51,18 @@ test-suite streamt-benchmarks
   hs-source-dirs: test
   type:           exitcode-stdio-1.0
 
+test-suite streamt-microkanren
+  main-is:        microkanren.hs
+  build-depends:
+      base       >=3   && <5
+    , hspec
+    , logict     >=0.4
+    , mtl
+    , streamt
+
+  hs-source-dirs: test
+  type:           exitcode-stdio-1.0
+
 test-suite streamt-test
   main-is:        test.hs
   build-depends:
