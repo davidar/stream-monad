@@ -1,4 +1,4 @@
-Name:          stream-monad
+Name:          streamt
 Version:       0.4.0.2
 Cabal-Version: >= 1.8
 Synopsis:      Simple, Fair and Terminating Backtracking Monad
@@ -13,8 +13,8 @@ License:       BSD3
 License-File:  LICENSE
 Author:        Oleg Kiselyov, Sebastian Fischer
 Maintainer:    Sebastian Fischer (fischer@nii.ac.jp)
-Bug-Reports:   http://github.com/sebfisch/stream-monad/issues
-Homepage:      http://github.com/sebfisch/stream-monad
+Bug-Reports:   http://github.com/davidar/streamt/issues
+Homepage:      http://github.com/davidar/streamt
 Build-Type:    Simple
 Stability:     experimental
 
@@ -28,22 +28,22 @@ Library
   Exposed-Modules:  Control.Monad.Stream
   Ghc-Options:      -Wall
 
-Test-suite stream-monad-benchmarks
+Test-suite streamt-benchmarks
   Main-Is:          benchmarks.hs
   Build-Depends:    base >= 3 && < 5,
                     criterion >= 0.5,
                     logict >= 0.4,
-                    stream-monad
+                    streamt
   HS-Source-Dirs:   test
   Type:             exitcode-stdio-1.0
 
-Test-suite stream-monad-test
+Test-suite streamt-test
   Main-Is:          test.hs
   Build-Depends:    base >= 3 && < 5,
                     async >= 2.0,
                     logict >= 0.4,
                     mtl,
-                    stream-monad,
+                    streamt,
                     tasty,
                     tasty-hunit
   HS-Source-Dirs:   test
@@ -51,4 +51,4 @@ Test-suite stream-monad-test
 
 Source-Repository head
   type:     git
-  location: git://github.com/sebfisch/stream-monad.git
+  location: git://github.com/davidar/streamt.git
