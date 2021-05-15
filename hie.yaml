@@ -6,5 +6,5 @@ cradle:
       component: "streamt:test:streamt-benchmarks"
     - path: "./test/microkanren.hs"
       component: "streamt:test:streamt-microkanren"
-    - path: "./test/test.hs"
-      component: "streamt:test:streamt-test"
+    - path: "./test/logic.hs"
+      component: "streamt:test:streamt-logic"

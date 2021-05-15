@@ -1,3 +1,4 @@
+-- based on the logict test-suite
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 
