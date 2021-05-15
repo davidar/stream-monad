@@ -25,8 +25,7 @@
 -- according to the monad laws may change the order of the results.
 -- 
 {-# LANGUAGE CPP, FlexibleInstances, LambdaCase,
-  MultiParamTypeClasses, TypeSynonymInstances, UndecidableInstances
-  #-}
+  MultiParamTypeClasses, UndecidableInstances #-}
 
 module Control.Monad.Stream
   ( MonadLogic(..)
@@ -59,7 +58,6 @@ import Data.Monoid (Monoid(..))
 #if MIN_VERSION_base(4,9,0)
 import Data.Semigroup (Semigroup(..))
 #endif
-import Data.Traversable (foldMapDefault)
 
 data StreamF s a
   = Nil
@@ -77,14 +75,6 @@ newtype StreamT m a =
     }
 
 type Stream = StreamT Identity
-
-instance Monad m => Functor (StreamT m) where
-  fmap f m =
-    m `bind` \case
-      Nil -> empty
-      Single x -> return (f x)
-      Cons x xs -> cons (f x) (fmap f xs)
-      Susp xs -> suspended (fmap f xs)
 
 -- |
 -- Suspensions can be used to ensure fairness.
@@ -154,6 +144,14 @@ instance Monad m => Monoid (StreamT m a) where
   mappend = (<|>)
   mconcat = F.asum
 
+instance Monad m => Functor (StreamT m) where
+  fmap f m =
+    m `bind` \case
+      Nil -> empty
+      Single x -> return (f x)
+      Cons x xs -> cons (f x) (fmap f xs)
+      Susp xs -> suspended (fmap f xs)
+
 instance Monad m => Applicative (StreamT m) where
   pure = StreamT . return . Single
   m <*> xs =
@@ -187,16 +185,21 @@ instance MonadState s m => MonadState s (StreamT m) where
   get = lift get
   put = lift . put
 
-instance Foldable Stream where
-  foldMap = foldMapDefault
+instance (Monad m, Foldable m) => Foldable (StreamT m) where
+  foldMap f = foldMap g . unStreamT
+    where
+      g Nil = mempty
+      g (Single x) = f x
+      g (Cons x xs) = f x <> foldMap f xs
+      g (Susp xs) = foldMap f xs
 
-instance Traversable Stream where
-  traverse f s =
-    case runIdentity (unStreamT s) of
-      Nil -> pure empty
-      Single x -> return <$> f x
-      Cons x xs -> cons <$> f x <*> traverse f xs
-      Susp xs -> suspended <$> traverse f xs
+instance (Monad m, Traversable m) => Traversable (StreamT m) where
+  traverse f = fmap StreamT . traverse g . unStreamT
+    where
+      g Nil = pure Nil
+      g (Single x) = Single <$> f x
+      g (Cons x xs) = Cons <$> f x <*> traverse f xs
+      g (Susp xs) = Susp <$> traverse f xs
 
 observeAllT :: Monad m => StreamT m a -> m [a]
 observeAllT m =
