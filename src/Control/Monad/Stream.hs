@@ -190,7 +190,7 @@ instance (Monad m, Foldable m) => Foldable (StreamT m) where
     where
       g Nil = mempty
       g (Single x) = f x
-      g (Cons x xs) = f x <> foldMap f xs
+      g (Cons x xs) = f x `mappend` foldMap f xs
       g (Susp xs) = foldMap f xs
 
 instance (Monad m, Traversable m) => Traversable (StreamT m) where
