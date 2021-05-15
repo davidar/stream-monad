@@ -1,6 +1,7 @@
-import Criterion.Main
-import Control.Monad
-import Control.Monad.Stream
+import Criterion.Main (defaultMain, bench, nf)
+import Control.Monad (guard, MonadPlus(..))
+import Control.Monad.Stream (Stream)
+import Data.Foldable (Foldable(toList))
 
 main :: IO ()
 main = defaultMain

@@ -28,30 +28,28 @@
   MultiParamTypeClasses, UndecidableInstances #-}
 
 module Control.Monad.Stream
-  ( MonadLogic(..)
-  , StreamT
+  ( StreamT
   , Stream
   , suspended
   , runStream
-  , toList
   , observe
   , observeT
   , observeAll
   , observeAllT
   , observeMany
   , observeManyT
+  , module Control.Monad.Logic.Class
   ) where
 
 import Control.Applicative (Alternative(..), (<**>))
 import Control.Monad (MonadPlus(..), liftM)
 import qualified Control.Monad.Fail as Fail
 import Control.Monad.Identity (Identity(..))
-import Control.Monad.Logic.Class (MonadLogic(..))
+import Control.Monad.Logic.Class
 import Control.Monad.Reader.Class (MonadReader(..))
 import Control.Monad.State.Class (MonadState(..))
 import Control.Monad.Trans (MonadIO(..), MonadTrans(..))
 import qualified Data.Foldable as F
-import Data.Foldable (toList)
 #if !MIN_VERSION_base(4,8,0)
 import Data.Monoid (Monoid(..))
 #endif
