@@ -1,7 +1,7 @@
 name:               streamt
 version:            0.4.0.2
 cabal-version:      >=1.8
-synopsis:           Simple, Fair and Terminating Backtracking Monad
+synopsis:           Simple, Fair and Terminating Backtracking Monad Transformer
 description:
   This Haskell library provides an implementation of the
   MonadPlus type class that enumerates results of a
@@ -13,8 +13,8 @@ description:
 category:           Control, Monads
 license:            BSD3
 license-file:       LICENSE
-author:             Oleg Kiselyov, Sebastian Fischer
-maintainer:         Sebastian Fischer (fischer@nii.ac.jp)
+author:             Oleg Kiselyov, Sebastian Fischer, David A Roberts
+maintainer:         David A Roberts <d@vidr.cc>
 bug-reports:        http://github.com/davidar/streamt/issues
 homepage:           http://github.com/davidar/streamt
 build-type:         Simple
@@ -28,7 +28,7 @@ tested-with:
    || ==8.10.4
    || ==9.0.1
 
-extra-source-files: README
+extra-source-files: README.md
 
 library
   build-depends:
@@ -45,7 +45,6 @@ test-suite streamt-benchmarks
   build-depends:
       base       >=3   && <5
     , criterion  >=0.5
-    , logict     >=0.4
     , streamt
 
   hs-source-dirs: test
@@ -56,7 +55,6 @@ test-suite streamt-microkanren
   build-depends:
       base       >=3   && <5
     , hspec
-    , logict     >=0.4
     , mtl
     , streamt
 
@@ -68,7 +66,6 @@ test-suite streamt-test
   build-depends:
       async        >=2.0
     , base         >=3   && <5
-    , logict       >=0.4
     , mtl
     , streamt
     , tasty

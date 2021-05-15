@@ -9,7 +9,7 @@ import Test.Hspec (hspec, it, shouldBe)
 type Var = Integer
 type Subst = [(Var, Term)]
 type State = (Subst, Integer)
-type Program a = StateT State Stream a
+type Program = StateT State Stream
 
 data Term = Atom String | Pair Term Term | Var Var deriving (Eq, Show)
 

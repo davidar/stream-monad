@@ -11,7 +11,6 @@ import           Control.Concurrent ( threadDelay )
 import           Control.Concurrent.Async ( race )
 import           Control.Exception
 import           Control.Monad.Identity
-import           Control.Monad.Logic.Class
 import           Control.Monad.Stream
 import           Control.Monad.Reader
 import qualified Control.Monad.State.Lazy as SL
@@ -51,7 +50,7 @@ monadReader3 = assertEqual "should be equal" [5,3] $
 
 nats, odds, oddsOrTwo,
   oddsOrTwoUnfair, oddsOrTwoFair,
-  odds5down :: (MonadLogic m, MonadPlus m, Monoid (m Integer)) => m Integer
+  odds5down :: Monad m => StreamT m Integer
 
 #if MIN_VERSION_base(4,8,0)
 nats = pure 0 `mplus` ((1 +) <$> nats)
@@ -110,13 +109,13 @@ main = defaultMain $
   , testGroup "Various monads"
     [
       -- nats will generate an infinite number of results; demonstrate
-      -- various ways of observing them via Logic/LogicT
+      -- various ways of observing them via Stream/StreamT
       testCase "runIdentity all"  $ [0..4] @=? (take 5 $ runIdentity $ observeAllT nats)
     , testCase "runIdentity many" $ [0..4] @=? (runIdentity $ observeManyT 5 nats)
     , testCase "observeAll"       $ [0..4] @=? (take 5 $ observeAll nats)
     , testCase "observeMany"      $ [0..4] @=? (observeMany 5 nats)
 
-    -- Ensure LogicT can be run over other base monads other than
+    -- Ensure StreamT can be run over other base monads other than
     -- List.  Some are productive (Reader) and some are non-productive
     -- (ExceptT, ContT) in the observeAll case.
 
@@ -144,7 +143,7 @@ main = defaultMain $
 
   --------------------------------------------------
 
-  , testGroup "Control.Monad.Logic.Fair tests"
+  , testGroup "Control.Monad.Stream tests"
     [
       testCase "Pythagorean triples" $ [(3,4,5),(4,3,5),(6,8,10),(8,6,10),(5,12,13),(12,5,13),(9,12,15)] @=?
       observeMany 7 pythagoreanTriples
@@ -173,10 +172,10 @@ main = defaultMain $
               z = mzero
           in assertBool "ReaderT" $ null $ catMaybes $ runReaderT (msplit z) 0
 
-        , testCase "msplit mzero :: LogicT" $
+        , testCase "msplit mzero :: StreamT" $
           let z :: StreamT [] String
               z = mzero
-          in assertBool "LogicT" $ null $ catMaybes $ concat $ observeAllT (msplit z)
+          in assertBool "StreamT" $ null $ catMaybes $ concat $ observeAllT (msplit z)
         , testCase "msplit mzero :: strict StateT" $
           let z :: SS.StateT Int [] String
               z = mzero
@@ -202,7 +201,7 @@ main = defaultMain $
             extract (msplit op) @?= [sample]
             extract (msplit op >>= (\(Just (_,nxt)) -> msplit nxt)) @?= []
 
-        , testCase "msplit LogicT" $ do
+        , testCase "msplit StreamT" $ do
             let op :: StreamT [] Integer
                 op = foldr (mplus . return) mzero sample
                 extract = fmap fst . catMaybes . concat . observeAllT
@@ -230,12 +229,12 @@ main = defaultMain $
         -- base case
         testCase "some odds"          $ [1,3,5,7] @=? observeMany 4 odds
 
-        -- without fairness, the second producer is never considered
+        -- identical to fair disjunction
       , testCase "unfair disjunction" $ [1,2,3,5] @=? observeMany 4 oddsOrTwoUnfair
 
         -- with fairness, the results are interleaved
 
-      , testCase "fair disjunction :: LogicT"   $ [1,2,3,5] @=? observeMany 4 oddsOrTwoFair
+      , testCase "fair disjunction :: StreamT"   $ [1,2,3,5] @=? observeMany 4 oddsOrTwoFair
 
         -- without fairness nothing would be produced, but with
         -- fairness, a production is obtained
@@ -274,7 +273,7 @@ main = defaultMain $
       [
         -- Using the fair conjunction operator (>>-) the test produces values
 
-        testCase "fair conjunction :: LogicT" $ [2,4,6,8] @=?
+        testCase "fair conjunction :: StreamT" $ [2,4,6,8] @=?
         observeMany 4 (let oddsPlus n = odds >>= \a -> return (a + n) in
                        do x <- (return 0 `mplus` return 1) >>- oddsPlus
                           if even x then return x else mzero
@@ -312,10 +311,10 @@ main = defaultMain $
         --   interleave (oddsPlus 0 >>- \x -> if ...)
         --              (oddsPlus 1 >>- \x -> if ...)
         --
-        -- which fails to produce any values because interleave still
-        -- requires production of values from both branches to switch
-        -- between those values, but the first (oddsPlus 0 ...) never
-        -- produces any values.
+        -- which produces values because interleaving suspended
+        -- Streams does *not* require production of values from
+        -- branches to switch between them (the first
+        -- (oddsPlus 0 ...) never produces any values).
 
       , testCase "fair conjunction PRODUCTIVE" $ [2,4,6,8] @=?
         observeMany 4 (let oddsPlus n = odds >>= \a -> return (a + n) in
@@ -325,7 +324,7 @@ main = defaultMain $
                         )
 
         -- This shows that the second >>- is effectively >>= since
-        -- there's no choice point for it, and values still cannot be
+        -- there's no choice point for it, and values can still be
         -- produced.
 
       , testCase "fair conjunction also PRODUCTIVE" $ [2,4,6,8] @=?
@@ -335,8 +334,7 @@ main = defaultMain $
                                  (\x -> if even x then return x else mzero)
                         )
 
-        -- unfair conjunction does not terminate or produce any
-        -- values: this will fail (expectedly) due to a timeout
+        -- identical to fair conjunction
 
       , testCase "unfair conjunction is PRODUCTIVE" $ [2,4,6,8] @=?
         observeMany 4 (let oddsPlus n = odds >>= \a -> return (a + n) in
@@ -415,7 +413,7 @@ main = defaultMain $
                            guard (d > 1 && n `mod` d == 0))
                     (const mzero)
                     (return n)
-      in testCase "indivisible odds :: LogicT" $ [3,5,7,11,13,17,19,23,29,31] @=?
+      in testCase "indivisible odds :: StreamT" $ [3,5,7,11,13,17,19,23,29,31] @=?
          observeMany 10 oc
 
     , let iota n = [1..n]
@@ -499,7 +497,7 @@ main = defaultMain $
   , testGroup "lnot (inversion)" $
     let isEven n = if even n then return n else mzero in
     [
-      testCase "inversion :: LogicT" $ [1,3,5,7,9] @=?
+      testCase "inversion :: StreamT" $ [1,3,5,7,9] @=?
       observeMany 5 (do v <- foldr (mplus . return) mzero [(1::Integer)..]
                         lnot (isEven v)
                         return v)

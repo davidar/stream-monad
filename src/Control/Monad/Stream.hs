@@ -1,9 +1,9 @@
 -- |
 -- Module      : Control.Monad.Stream
--- Copyright   : Oleg Kiselyov, Sebastian Fischer
+-- Copyright   : Oleg Kiselyov, Sebastian Fischer, David A Roberts
 -- License     : BSD3
 -- 
--- Maintainer  : Sebastian Fischer (sebf@informatik.uni-kiel.de)
+-- Maintainer  : David A Roberts <d@vidr.cc>
 -- Stability   : experimental
 -- Portability : portable
 -- 
@@ -17,10 +17,10 @@
 -- that the search does not diverge if there are remaining
 -- non-deterministic results.
 -- 
--- More information is available on the authors website:
+-- More information is available on the author's website:
 -- <http://okmij.org/ftp/Computation/monads.html#fair-bt-stream>
 -- 
--- Warning: @Stream@ is only a monad when the results of @runStream@
+-- Warning: @Stream@ is only a monad when the results of @observeAll@
 -- are interpreted as a multiset, i.e., a valid transformation
 -- according to the monad laws may change the order of the results.
 -- 
@@ -29,7 +29,8 @@
   #-}
 
 module Control.Monad.Stream
-  ( StreamT
+  ( MonadLogic(..)
+  , StreamT
   , Stream
   , suspended
   , runStream
@@ -60,16 +61,16 @@ import Data.Semigroup (Semigroup(..))
 #endif
 import Data.Traversable (foldMapDefault)
 
--- |
--- Results of non-deterministic computations of type @Stream a@ can be
--- enumerated efficiently.
--- 
 data StreamF s a
   = Nil
   | Single a
   | Cons a s
   | Susp s
 
+-- |
+-- Results of non-deterministic computations of type @StreamT m a@ can be
+-- enumerated efficiently.
+-- 
 newtype StreamT m a =
   StreamT
     { unStreamT :: m (StreamF (StreamT m a) a)
@@ -106,10 +107,10 @@ bind m f = StreamT $ unStreamT m >>= unStreamT . f
 -- non-deterministic computation.
 -- 
 runStream :: Stream a -> [a]
-runStream = toList
+runStream = observeAll
 
 {-# DEPRECATED
-runStream "use toList"
+runStream "use observeAll"
  #-}
 
 instance Monad m => Monad (StreamT m) where
