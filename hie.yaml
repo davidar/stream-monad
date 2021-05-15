@@ -1,0 +1,10 @@
+cradle:
+  stack:
+    - path: "./src"
+      component: "streamt:lib"
+    - path: "./test/benchmark.hs"
+      component: "streamt:test:streamt-benchmark"
+    - path: "./test/microkanren.hs"
+      component: "streamt:test:streamt-microkanren"
+    - path: "./test/test.hs"
+      component: "streamt:test:streamt-test"
