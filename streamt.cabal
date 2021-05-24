@@ -32,9 +32,9 @@ extra-source-files: README.md
 
 library
   build-depends:
-      base    >=3   && <5
-    , logict  >=0.4
-    , mtl
+      base    >=4.3 && <5
+    , logict  >=0.7 && <0.8
+    , mtl     >=2.0 && <2.3
 
   hs-source-dirs:  src
   exposed-modules: Control.Monad.Stream
@@ -53,7 +53,7 @@ test-suite streamt-benchmarks
 test-suite streamt-microkanren
   main-is:        microkanren.hs
   build-depends:
-      base       >=3   && <5
+      base
     , hspec
     , mtl
     , streamt
@@ -65,7 +65,7 @@ test-suite streamt-logic
   main-is:        logic.hs
   build-depends:
       async        >=2.0
-    , base         >=3   && <5
+    , base
     , mtl
     , streamt
     , tasty
