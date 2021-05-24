@@ -1,6 +1,6 @@
 name:               streamt
 version:            0.5.0.0
-cabal-version:      >=1.8
+cabal-version:      >=1.10
 synopsis:           Simple, Fair and Terminating Backtracking Monad Transformer
 description:
   This Haskell library provides an implementation of the
@@ -36,33 +36,36 @@ library
     , logict  >=0.7 && <0.8
     , mtl     >=2.0 && <2.3
 
-  hs-source-dirs:  src
-  exposed-modules: Control.Monad.Stream
-  ghc-options:     -Wall
+  hs-source-dirs:   src
+  exposed-modules:  Control.Monad.Stream
+  ghc-options:      -Wall
+  default-language: Haskell2010
 
 test-suite streamt-benchmarks
-  main-is:        benchmarks.hs
+  main-is:          benchmarks.hs
   build-depends:
       base       >=3   && <5
     , criterion  >=0.5
     , streamt
 
-  hs-source-dirs: test
-  type:           exitcode-stdio-1.0
+  hs-source-dirs:   test
+  type:             exitcode-stdio-1.0
+  default-language: Haskell2010
 
 test-suite streamt-microkanren
-  main-is:        microkanren.hs
+  main-is:          microkanren.hs
   build-depends:
       base
     , hspec
     , mtl
     , streamt
 
-  hs-source-dirs: test
-  type:           exitcode-stdio-1.0
+  hs-source-dirs:   test
+  type:             exitcode-stdio-1.0
+  default-language: Haskell2010
 
 test-suite streamt-logic
-  main-is:        logic.hs
+  main-is:          logic.hs
   build-depends:
       async        >=2.0
     , base
@@ -71,8 +74,9 @@ test-suite streamt-logic
     , tasty
     , tasty-hunit
 
-  hs-source-dirs: test
-  type:           exitcode-stdio-1.0
+  hs-source-dirs:   test
+  type:             exitcode-stdio-1.0
+  default-language: Haskell2010
 
 source-repository head
   type:     git
