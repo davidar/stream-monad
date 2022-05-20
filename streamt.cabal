@@ -1,5 +1,5 @@
 name:               streamt
-version:            0.5.0.0
+version:            0.5.0.1
 cabal-version:      >=1.10
 synopsis:           Simple, Fair and Terminating Backtracking Monad Transformer
 description:
@@ -33,7 +33,7 @@ extra-source-files: README.md
 library
   build-depends:
       base    >=4.3 && <5
-    , logict  >=0.7 && <0.8
+    , logict  >=0.7 && <0.9
     , mtl     >=2.0 && <2.3
 
   hs-source-dirs:   src
